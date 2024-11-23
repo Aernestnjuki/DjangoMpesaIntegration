@@ -107,10 +107,42 @@ class MpesaGateWay:
 
         if res.ok:
             data['ip'] = request.META.get('REMOTE_ADDR')
-            data['chockout_request-id'] = res_data['CheckoutRequstID']
+            data['chockout_request-id'] = res_data['CheckoutRequestID']
 
             Transaction.objects.create(**data)
         return res_data
     
 
+    def check_status(self, data):
+        try:
+            status = data['Body']['stkCallback']['ResultCode']
+        except Exception as e:
+            logging.error(f'Error: {e}')
+            status = 1
+        return status
     
+    def get_transaction_object(self, data):
+        checkout_request_id = data['Body']['stkCallback']['CheckoutRequestID']
+        transaction, _ = Transaction.objects.get_or_create(checkout_request_id=checkout_request_id)
+        return transaction
+    
+    def handle_seccessful_pay(self, data, transaction):
+        items = data['Body']['stkCallback']['CallbackMetadata']['Item']
+        for item in items:
+            if item['Name'] == 'Amount':
+                amount = item['Value']
+            elif item['Name'] == 'MpesaReceiptNumber':
+                receipt_no = item['Value']
+            elif item['Name'] == 'PhoneNumber':
+                phone_number = item['Value']
+
+        
+        transaction.amount = amount
+        transaction.phone_number = PhoneNumber(raw_input=phone_number)
+        transaction.receipt_no = receipt_no
+        transaction.confirmed = True
+
+        return transaction
+    
+    def callback_handler(self, data):
+        status = self.check_status(data)
