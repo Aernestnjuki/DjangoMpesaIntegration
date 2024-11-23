@@ -59,4 +59,58 @@ class MpesaGateWay:
             token = res.json()['access_token']
             self.headers = {'Authorization': f'Bearer {token}'}
             return token
+
+
+    class Decorators:
+        @staticmethod
+        def refresh_token(decorated):
+            def wrapper(gateway, *args, **kwargs):
+                if(gateway.access_token_expiration and time.time() > gateway.access_token_expiration):
+                    token = gateway.getAccessToken()
+                    gateway.access_token = token
+                return decorated(gateway, *args, **kwargs)
+            return wrapper
         
+    def generate_password(self):
+        """Generates mpesa api password using the provied shortcode and passkey"""
+
+        self.timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        password_str = settings.SHORT_CODE + settings.PASS_KEY + self.timestamp
+        password_bytes = password_str.encode('ascii')
+        return base64.b64decode(password_bytes).decode('utf-8')
+    
+    @Decorators.refresh_token
+    def stk_push_request(self, payload):
+        request = payload['request']
+        data = payload['data']
+        amount = data['amount']
+        phone_number = data['phone_number']
+        req_data = {
+            'BusinessShortCode': self.shortcode,
+            'Password': self.password,
+            'Timestamp': self.timestamp,
+            'TransactionType': 'CustomerPayBillOnline',
+            'Amount': math.ceil(float(amount)),
+            'PartyA': phone_number,
+            'PartB': self.shortcode,
+            'PhoneNumber': phone_number,
+            'CallBackURL': self.callback_url,
+            'AccountReference': 'Test',
+            'TransactionDesc': 'Test',
+        }
+
+        res = requests.post(self.checkout_url, json=req_data, headers=self.headers, timeout=30)
+
+        res_data = res.json()
+        logging.info('Mpesa request data {}'.format(req_data))
+        logging.info('Mpesa response info {}'.format(res_data))
+
+        if res.ok:
+            data['ip'] = request.META.get('REMOTE_ADDR')
+            data['chockout_request-id'] = res_data['CheckoutRequstID']
+
+            Transaction.objects.create(**data)
+        return res_data
+    
+
+    
