@@ -11,16 +11,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-import environ
+from environs import Env
 
-env = environ.Env.read_env()
-
-
-
-access_token_url = env('access_token_url')
-consumer_key = env("consumer_key")
-consumer_secret = env("consumer_secret")
-
+env = Env()
+env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -136,3 +130,12 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+CONSUMER_KEY = env("CONSUMER_KEY")
+CONSUMER_SECRET = env("CONSUMER_SECRET")
+ACCESS_TOKEN_URL = env('ACCESS_TOKEN_URL')
+CHECKOUT_URL = env('ACCESS_TOKEN_URL')
+CALLBACK_URL = env('CALLBACK_URL')
+SHORT_CODE = env('SHORT_CODE')
+PASS_KEY = env('PASS_KEY')
