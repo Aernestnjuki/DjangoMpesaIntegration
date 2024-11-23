@@ -23,7 +23,7 @@ class MpesaCheckout(APIView):
         if serializer.is_valid(raise_exception=True):
             payload = {"data": serializer.validated_data, "request": request}
             res = gateway.stk_push_request(payload)
-            return Response(res, status=status.HTTP_201_CREATED)
+            return Response(res, status=status.HTTP_200_OK)
         
 
 @authentication_classes([])
@@ -37,7 +37,7 @@ class MpesaCallBack(APIView):
     def post(self, request, *args, **kwargs):
         logging.info("{}".format("Callback from MPESA"))
         data = request.body
-        return gateway.callback(json.loads(data))
+        return gateway.callback_handler(data)
     
         
 

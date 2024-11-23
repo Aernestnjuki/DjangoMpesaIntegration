@@ -26,7 +26,6 @@ class MpesaGateWay:
     timestamp = None
 
     def __init__(self):
-        now = datetime.now()
         self.shortcode = settings.SHORT_CODE
         self.consumer_key = settings.CONSUMER_KEY
         self.consumer_secret = settings.CONSUMER_SECRET
@@ -126,7 +125,7 @@ class MpesaGateWay:
         transaction, _ = Transaction.objects.get_or_create(checkout_request_id=checkout_request_id)
         return transaction
     
-    def handle_seccessful_pay(self, data, transaction):
+    def handle_successful_pay(self, data, transaction):
         items = data['Body']['stkCallback']['CallbackMetadata']['Item']
         for item in items:
             if item['Name'] == 'Amount':
